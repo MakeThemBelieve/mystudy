@@ -11,7 +11,7 @@
 #include <sys/poll.h>
 #include <sys/epoll.h>
 
-
+#define BUFFER_LISTEN   1024
 
 
 void *client_thread(void *arg){
@@ -30,8 +30,6 @@ void *client_thread(void *arg){
     
     close(clientfd);
 }
-
-
 
 
 
@@ -228,8 +226,8 @@ int main(int argc, char const *argv[])
                 printf("clientfd:%d\n",clientfd);
             }else if (events[i].events & EPOLLIN){
 
-                char buffer[128] = {0};
-                int count = recv(connfd, buffer, 128, 0);
+                char buffer[BUFFER_LISTEN] = {0};
+                int count = recv(connfd, buffer, BUFFER_LISTEN, 0);
                 if (count == 0)
                 {
                     printf("disconnect\n");
