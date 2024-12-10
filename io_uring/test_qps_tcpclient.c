@@ -8,16 +8,25 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <arpa/inet.h>
-
-
+#include <pthread.h>
+#include <sys/time.h>
 
 #define TEST_MSSAGE     "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890abcdefghijklmnopqrstuvwxyz\r\n"
 #define RBUFFER_LENGTH  128
+#define TIME_SUB_MS(tv1, tv2) ((tv1.tv_sec - tv2.tv_sec) * 1000 + (tv1.tv_usec - tv2.tv_usec) / 1000)
 
-static void *test_qps_entry(void *arg) {
-    
-}
 
+typedef struct test_context_s {
+    char serverip[16];
+    int port;
+    int threadnum;
+    int connection;
+    int requestion;
+
+#if 1
+    int failed;
+#endif
+} test_context_t;
 
 
 //建立TCP连接
@@ -67,14 +76,40 @@ int send_recv_tcppkt(int fd) {
     return 0;
 }
 
+
+static void *test_qps_entry(void *arg) {
+
+    test_context_t *pctx =(test_context_t*)arg;
+
+    int connfd = connect_tcpserver(pctx->serverip, pctx->port);
+    if (connfd < 0) {
+        printf("connnect_tcpserver failed\n");
+        return NULL;
+    }
+
+    int count = pctx->requestion / pctx->threadnum;
+    int i = 0;
+
+    int res; 
+    
+    while (i++ < count) {
+        res = send_recv_tcppkt(connfd);
+        if (res != 0) {
+
+            printf("send_recv_tcppkt failed\n");
+            pctx->failed++;
+            continue;
+        }
+    }
+    
+    return NULL;
+}
+
 // ./test_qps_tcpclient -s 127.0.0.1 -p 2048 -t 50 -c 100 -n 10000
 int main(int argc, char *argv[]){
     
-    char serverip[16] = {0};
-    int port;
-    int threadnum = 0;
-    int connection = 0;
-    int requestion = 0;
+    int ret = 0;
+    test_context_t ctx = {0};
 
     int opt;
 
@@ -84,27 +119,27 @@ int main(int argc, char *argv[]){
         {
         case 's':
             printf("-s: %s\n", optarg);
-            strcpy(serverip,optarg);
+            strcpy(ctx.serverip,optarg);
             break;
 
         case 'p':
             printf("-p: %s\n", optarg);
-            port = atoi(optarg); // 用于将字符串转换为整数
+            ctx.port = atoi(optarg); // 用于将字符串转换为整数
             break;
 
         case 't':
             printf("-t: %s\n", optarg);
-            threadnum = atoi(optarg);
+            ctx.threadnum = atoi(optarg);
             break;
 
         case 'c':
             printf("-c: %s\n", optarg);
-            connection = atoi(optarg);
+            ctx.connection = atoi(optarg);
             break;
 
         case 'n':
             printf("-n: %s\n", optarg);
-            requestion = atoi(optarg);
+            ctx.requestion = atoi(optarg);
             break;
 
         default:
@@ -112,18 +147,32 @@ int main(int argc, char *argv[]){
         }
     }
 
-    int connfd = connect_tcpserver(serverip, port);
-    if (connfd < 0) {
-        printf("connnect_tcpserver failed\n");
-        return -1;
+    //栈上分配
+    // pthread_t ptid[10] = {0};
+    //堆上分配
+    pthread_t *ptid = malloc(ctx.threadnum * sizeof(pthread_t));
+    int i = 0;
+
+    struct timeval tv_begin;
+    gettimeofday(&tv_begin, NULL);
+    for (i = 0;i < ctx.threadnum; i++) {
+        pthread_create(&ptid[i], NULL, test_qps_entry, &ctx);
     }
 
-    int ret = send_recv_tcppkt(connfd);
-    if (ret != 0) {
-        printf("send_recv_tcppkt failed\n");
-        return -1;
+    for (i = 0;i < ctx.threadnum; i++) {
+        pthread_join(ptid[i], NULL);
     }
 
-    printf("success\n");
+    struct timeval tv_end;
+    gettimeofday(&tv_end, NULL);
+
+    int time_used = TIME_SUB_MS(tv_end, tv_begin);
+
+    printf("success: %d,failed: %d, time_used: %d\n", ctx.requestion-ctx.failed, ctx.failed, time_used);
+
+clean:
+    // clean 是一个标签。
+    free(ptid);
+    //释放防止内存泄漏
     return 0;
 }

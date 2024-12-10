@@ -12,7 +12,10 @@
         "fcntl.h": "c",
         "dlfcn.h": "c",
         "ucontext.h": "c",
-        "liburing.h": "c"
+        "liburing.h": "c",
+        "unistd.h": "c",
+        "pthreadtypes.h": "c",
+        "stdint.h": "c"
     },
     "editor.quickSuggestions": {
         "comments": "on",
