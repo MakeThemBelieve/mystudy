@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "stdio.h": "c",
+        "in.h": "c",
+        "atomic": "c",
+        "pthread.h": "c",
+        "stdlib.h": "c",
+        "spinlock.h": "c",
+        "thrd_pool.h": "c",
+        "*.tcc": "c",
+        "ostream": "c",
+        "fcntl.h": "c",
+        "dlfcn.h": "c",
+        "ucontext.h": "c",
+        "liburing.h": "c"
+    },
+    "editor.quickSuggestions": {
+        "comments": "on",
+        "strings": "on"
+    },
+    "editor.inlineSuggest.syntaxHighlightingEnabled": false,
+    "editor.suggest.localityBonus": false,
+    "editor.suggest.preview": false,
+    "editor.inlineSuggest.showToolbar": "onHover"
+}
