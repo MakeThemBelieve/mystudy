@@ -22,10 +22,17 @@ class RefCountedPtr{
     RefCountedPtr() : ptr(nullptr), control(nullptr) {}
     explicit RefCountedPtr(T *p);
     RefCountedPtr(const RefCountedPtr &p);
-    RefCountedPtr& operator=(const RefCountedPtr&& p);
-    
+    RefCountedPtr& operator=(const RefCountedPtr& p);
+    RefCountedPtr(RefCountedPtr &&p) noexcept;
+    RefCountedPtr& operator=(RefCountedPtr&& p) noexcept; 
     ~RefCountedPtr();
 
+    T* operator->() const;
+    T& operator *() const;
+
+    T* get() const;
+    void reset(T* p = nullptr);
 };
+
 
 #endif
